@@ -24,9 +24,28 @@ def binary_to_ascii(binario):
     
     return string_final
 
-# Testes de uso
-entrada = "Hello"
-binario = ascii_to_binary(entrada)
-print(binario)
+def codificador_canal_AMI(binario):
+    sinal_ami = [] # Lista onde ficará a saída
+    ultimo_nivel = -1 # Começa em -1 para que o primeiro "1" vire +1
+    
+    for bit in binario:
+        if bit == '1':
+            # Alterna o nível: se estava -1, vira +1; se estava +1, vira -1
+            ultimo_nivel *= -1
+            sinal_ami.append(ultimo_nivel)
+        else:
+            # O zero sempre vira nível 0
+            sinal_ami.append(0)
+    
+    return sinal_ami
 
-print(binary_to_ascii("0100100001100101011011000110110001101111"))
+# Solicita uma entrada do usuário
+texto = input("Digite uma string ASCII para a transmissão: ")
+
+# Converte a string para binário
+binario = ascii_to_binary(texto)
+print(f"Representação binária: {binario}")
+
+# Codifica o binário usando AMI
+sinal_ami = codificador_canal_AMI(binario)
+print(f"Sinal AMI: {sinal_ami}")
