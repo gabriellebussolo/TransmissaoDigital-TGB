@@ -1,5 +1,7 @@
 
 import textwrap
+import numpy as np
+import matplotlib.pyplot as plt
 
 # Converte uma string ASCII em binário
 def ascii_to_binary(texto):
@@ -24,33 +26,38 @@ def binary_to_ascii(binario):
     
     return string_final
 
-# Codificador de canal AMI (bipolar)
-def codificador_canal_AMI(binario):
-    sinal_ami = [] # Lista onde ficará a saída
-    ultimo_nivel = -1 # Começa em -1 para que o primeiro "1" vire +1
+# Codificador de canal NRZ-S
+# -1 = -V (nível negativo)
+# +1 = +V (nível positivo)
+def codificador_canal_NRZS(binario):
+    sinal_nrz = [] # Lista onde ficará a saída
+    nivel_atual = +1 # Começa em nível positivo (+V)
     
     for bit in binario:
-        if bit == '1':
-            # Alterna o nível: se estava -1, vira +1; se estava +1, vira -1
-            ultimo_nivel *= -1
-            sinal_ami.append(ultimo_nivel)
-        else:
-            # O zero sempre vira nível 0
-            sinal_ami.append(0)
+        if bit == '0':
+            # o 0 gera inversão de nível
+            nivel_atual *= -1
+        # Se o bit for 1, nada muda (mantém o nível)
+        sinal_nrz.append(nivel_atual)
     
-    return sinal_ami
+    return sinal_nrz
 
-# Decodificador de canal AMI (bipolar)
-def decodificador_canal_AMI(sinal_ami):
+# Decodificador de canal NRZ-S
+def decodificador_canal_NRZS(sinal):
     binario = []
     
-    for nivel in sinal_ami:
-        if nivel == 0:
-            binario.append('0')  # 0 no sinal → bit 0
+    # O primeiro nível não tem "anterior", então assumimos o nível inicial +1 que definimos no codificador
+    nivel_anterior = +1
+
+    for nivel in sinal:
+        if nivel == nivel_anterior:
+            binario.append('1')     # Mesmo nível → bit 1
         else:
-            binario.append('1') # +1 ou -1 → bit 1
-    
-    # Junta os bits em uma única string
+            binario.append('0')     # Nível mudou → bit 0
+        
+        # Atualiza o nível anterior
+        nivel_anterior = nivel
+
     return ''.join(binario)
 
 # Solicita uma entrada do usuário
@@ -60,12 +67,12 @@ texto = input("Digite uma string ASCII para a transmissão: ")
 binario = ascii_to_binary(texto)
 print(f"Representação binária: {binario}")
 
-# Codifica o binário usando AMI
-sinal_ami = codificador_canal_AMI(binario)
-print(f"Sinal AMI: {sinal_ami}")
+# Codifica o binário usando NRZ-S
+sinal_nrzs = codificador_canal_NRZS(binario)
+print(f"Sinal NRZ-S: {sinal_nrzs}")
 
-# Decodifica o sinal AMI de volta para binário
-binario_decodificado = decodificador_canal_AMI(sinal_ami)
+# Decodifica o sinal NRZ-S de volta para binário
+binario_decodificado = decodificador_canal_NRZS(sinal_nrzs)
 print(f"Binário decodificado: {binario_decodificado}")
 
 # Converte o binário decodificado de volta para ASCII
