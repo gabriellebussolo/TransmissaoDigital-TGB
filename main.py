@@ -61,6 +61,29 @@ def bpsk_modulation(sinal, fc=0.5, amostragem=100):
 
     return t, sinal_bpsk
 
+def bpsk_demodulation(received, fc=0.5, amostragem=100):
+    t = np.linspace(0, len(received)/amostragem, len(received))
+    portadora = np.cos(2*np.pi*fc*t)
+
+    # Multiplica pela portadora
+    sinal_multiplicado = received * portadora
+
+    # Integra símbolo a símbolo
+    num_simbolos = len(received) // amostragem
+    manchester_recuperado = []
+
+    for i in range(num_simbolos):
+        inicio = i * amostragem
+        fim = (i + 1) * amostragem
+        energia = np.sum(sinal_multiplicado[inicio:fim])
+
+        if energia >= 0:
+            manchester_recuperado.append(1)
+        else:
+            manchester_recuperado.append(-1)
+
+    return manchester_recuperado
+
 
 def qpsk_modulation(binario, fc=2, amostragem=200):
     if len(binario) % 2 != 0:
@@ -90,6 +113,37 @@ def qpsk_modulation(binario, fc=2, amostragem=200):
 
     return t, sinal
 
+""" def qpsk_demodulation(received, fc=2, amostragem=200):
+    t = np.linspace(0, len(received)/amostragem, len(received))
+
+    portadora_I = np.cos(2*np.pi*fc*t)
+    portadora_Q = np.sin(2*np.pi*fc*t)
+
+    num_simbolos = len(received) // amostragem
+    bits = ""
+
+    for i in range(num_simbolos):
+        inicio = i * amostragem
+        fim = (i + 1) * amostragem
+
+        trecho = received[inicio:fim]
+
+        # correlaciona
+        I = np.sum(trecho * portadora_I[inicio:fim])
+        Q = np.sum(trecho * portadora_Q[inicio:fim])
+
+        # decisão por quadrante
+        if I > 0 and Q > 0:
+            bits += "00"
+        elif I < 0 and Q > 0:
+            bits += "01"
+        elif I < 0 and Q < 0:
+            bits += "11"
+        else:
+            bits += "10"
+
+    return bits
+ """
 
 def plot_all(manchester, 
              t_bpsk, bpsk, bpsk_ruido,
@@ -151,6 +205,29 @@ bpsk_ruido = awgn(bpsk, sigma=0.5)
 # QPSK
 t_qpsk, qpsk = qpsk_modulation(binario)
 qpsk_ruido = awgn(qpsk, sigma=0.5)
+
+# =============== DEMODULAÇÃO BPSK ===============
+manchester_recuperado_bpsk = bpsk_demodulation(bpsk_ruido)
+
+binario_bpsk = manchester_decode(manchester_recuperado_bpsk)
+ascii_bpsk = binary_to_ascii(binario_bpsk)
+
+print("\n[5] MENSAGEM RECUPERADA VIA BPSK:")
+print("Binário:", binario_bpsk)
+print("ASCII:", ascii_bpsk)
+
+# =============== DEMODULAÇÃO QPSK ===============
+""" binario_qpsk = qpsk_demodulation(qpsk_ruido)
+
+# remover padding se houver
+binario_qpsk = binario_qpsk[:len(binario)]
+
+ascii_qpsk = binary_to_ascii(binario_qpsk)
+
+print("\n[6] MENSAGEM RECUPERADA VIA QPSK:")
+print("Binário:", binario_qpsk)
+print("ASCII:", ascii_qpsk)
+ """
 
 # Plot final
 plot_all(
