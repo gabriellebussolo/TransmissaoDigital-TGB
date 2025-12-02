@@ -2,10 +2,6 @@ import textwrap
 import numpy as np
 import matplotlib.pyplot as plt
 
-# ============================================================
-# ASCII ↔ BINÁRIO
-# ============================================================
-
 def ascii_to_binary(texto):
     binario_final = ""
     for char in texto:
@@ -22,11 +18,6 @@ def binary_to_ascii(binario):
         caractere = chr(numero)
         string_final += caractere
     return string_final
-
-
-# ============================================================
-# CODIFICAÇÃO MANCHESTER
-# ============================================================
 
 def manchester_encode(binario):
     sinal = []
@@ -48,9 +39,11 @@ def manchester_decode(sinal):
     return binario
 
 
-# ============================================================
-# MODULAÇÃO BPSK (com entrada Manchester)
-# ============================================================
+
+def awgn(signal, sigma):
+    noise = np.random.normal(0, sigma, len(signal))
+    return signal + noise
+
 
 def bpsk_modulation(sinal, fc=0.5, amostragem=100):
     t_total = len(sinal)
@@ -68,10 +61,6 @@ def bpsk_modulation(sinal, fc=0.5, amostragem=100):
 
     return t, sinal_bpsk
 
-
-# ============================================================
-# MODULAÇÃO QPSK (pares de bits)
-# ============================================================
 
 def qpsk_modulation(binario, fc=2, amostragem=200):
     if len(binario) % 2 != 0:
@@ -102,28 +91,32 @@ def qpsk_modulation(binario, fc=2, amostragem=200):
     return t, sinal
 
 
-# ============================================================
-# PLOTS
-# ============================================================
+def plot_all(manchester, 
+             t_bpsk, bpsk, bpsk_ruido,
+             t_qpsk, qpsk, qpsk_ruido):
 
-def plot_all(manchester, t_bpsk, bpsk_signal, t_qpsk, qpsk_signal):
-    fig, axs = plt.subplots(3, 1, figsize=(13, 8), sharex=False)
+    fig, axs = plt.subplots(5, 1, figsize=(13, 11), sharex=False)
 
     axs[0].step(range(len(manchester)), manchester, where='post')
-    axs[0].set_title("Sinal Manchester")
-    axs[0].set_ylabel("Amplitude")
+    axs[0].set_title("Manchester")
     axs[0].grid(True)
 
-    axs[1].plot(t_bpsk, bpsk_signal)
-    axs[1].set_title("BPSK Modulado (com entrada Manchester)")
-    axs[1].set_ylabel("Amplitude")
+    axs[1].plot(t_bpsk, bpsk)
+    axs[1].set_title("BPSK")
     axs[1].grid(True)
 
-    axs[2].plot(t_qpsk, qpsk_signal)
-    axs[2].set_title("QPSK Modulado")
-    axs[2].set_xlabel("Tempo")
-    axs[2].set_ylabel("Amplitude")
+    axs[2].plot(t_bpsk, bpsk_ruido)
+    axs[2].set_title("BPSK com Ruído (AWGN)")
     axs[2].grid(True)
+
+    axs[3].plot(t_qpsk, qpsk)
+    axs[3].set_title("QPSK")
+    axs[3].grid(True)
+
+    axs[4].plot(t_qpsk, qpsk_ruido)
+    axs[4].set_title("QPSK com Ruído (AWGN)")
+    axs[4].set_xlabel("Tempo")
+    axs[4].grid(True)
 
     plt.tight_layout()
     plt.show()
@@ -140,18 +133,28 @@ print("\n[1] BINÁRIO DA MENSAGEM:")
 print(binario)
 
 sinal_manchester = manchester_encode(binario)
-print("\n[2] SINAL MANCHESTER GERADO:")
+print("\n[2] SINAL MANCHESTER:")
 print(sinal_manchester)
 
-binario_decod_manchester = manchester_decode(sinal_manchester)
-print("\n[3] DECODIFICAÇÃO MANCHESTER → BINÁRIO:")
-print(binario_decod_manchester)
+binario_decod = manchester_decode(sinal_manchester)
+print("\n[3] DECODIFICAÇÃO MANCHESTER:")
+print(binario_decod)
 
-ascii_decodificado = binary_to_ascii(binario_decod_manchester)
+ascii_recuperado = binary_to_ascii(binario_decod)
 print("\n[4] ASCII RECUPERADO:")
-print(ascii_decodificado)
+print(ascii_recuperado)
 
-t_bpsk, sinal_bpsk = bpsk_modulation(sinal_manchester)
-t_qpsk, sinal_qpsk = qpsk_modulation(binario)
+# BPSK
+t_bpsk, bpsk = bpsk_modulation(sinal_manchester)
+bpsk_ruido = awgn(bpsk, sigma=0.5)
 
-plot_all(sinal_manchester, t_bpsk, sinal_bpsk, t_qpsk, sinal_qpsk)
+# QPSK
+t_qpsk, qpsk = qpsk_modulation(binario)
+qpsk_ruido = awgn(qpsk, sigma=0.5)
+
+# Plot final
+plot_all(
+    sinal_manchester,
+    t_bpsk, bpsk, bpsk_ruido,
+    t_qpsk, qpsk, qpsk_ruido
+)
