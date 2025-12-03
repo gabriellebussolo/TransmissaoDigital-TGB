@@ -1,6 +1,8 @@
 import textwrap
 import numpy as np
 import matplotlib.pyplot as plt
+import random
+import string
 
 def ascii_to_binary(texto):
     binario_final = ""
@@ -166,12 +168,18 @@ def plot_all(manchester,
     plt.tight_layout()
     plt.show()
 
-
 # ============================================================
 # EXECUÇÃO
 # ============================================================
 
-texto = input("Digite uma string ASCII para a transmissão: ")
+option = input("Voce deseja inserir uma mensagem ou quer que o sistema gere uma aleatoria? \nDigite 'i' para inserir ou 'g' para gerar aleatoria: ")
+if option == 'g':
+    tamanho = int(input("Digite o tamanho da mensagem aleatoria a ser gerada (numero de caracteres): "))
+    chars = string.printable  # inclui letras, números, símbolos e espaço
+    texto = ''.join(random.choice(chars) for _ in range(tamanho))
+    print(f"\nMensagem aleatoria gerada: {texto}")
+else: 
+    texto = input("Digite uma string ASCII para a transmissão: ")
 
 binario = ascii_to_binary(texto)
 print("\n[1] BINÁRIO DA MENSAGEM:")
