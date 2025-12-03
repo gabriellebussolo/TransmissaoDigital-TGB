@@ -83,85 +83,57 @@ def bpsk_demodulation(received, fc=0.5, amostragem=100):
     return manchester_recuperado
 
 
-def qpsk_modulation(binario, fc=2, amostragem=200):
-    # O QPSK mapeia 2 bits por símbolo, se houver número ímpar de bits, adiciona um zero no final
-    if len(binario) % 2 != 0:
-        binario += "0"   
+def qpsk_modulation(manchester, fc=2, amostragem=200):
 
-    # Divide a string binária em grupos de 2 bits
-    pares = [binario[i:i+2] for i in range(0, len(binario), 2)]
+    # Garantir que o número de níveis seja par (2 por símbolo)
+    if len(manchester) % 2 != 0:
+        manchester.append(1)   # padding mínimo só pra completar par
 
-    # Mapeamento de fase para cada par de bits
-    mapa_IQ = {
-        "00": ( 1,  1),
-        "01": (-1,  1),
-        "11": (-1, -1),
-        "10": ( 1, -1)
-    }
+    # Agrupa pares Manchester → símbolos (I,Q)
+    pares_IQ = [(manchester[i], manchester[i+1]) 
+                for i in range(0, len(manchester), 2)]
 
-    # Quantidade total de símbolos.
-    t_total = len(pares)
-    
-    # Cria o eixo de tempo
+    t_total = len(pares_IQ)
     t = np.linspace(0, t_total, t_total * amostragem)
-    
-    # Portadoras Q/I
+
     carrier_I = np.cos(2*np.pi*fc*t)
     carrier_Q = np.sin(2*np.pi*fc*t)
 
-    # Cria um vetor cheio de zeros para o sinal modulado
     sinal = np.zeros_like(t)
-
-    # Monta a QPSK, obtendo a fase correta para cada par de bits normalização de energia
     norm = 1/np.sqrt(2)
 
-    # 6) construção símbolo a símbolo
-    for k, par in enumerate(pares):
-        I, Q = mapa_IQ[par]
-
+    for k, (I, Q) in enumerate(pares_IQ):
         inicio = k * amostragem
         fim = (k + 1) * amostragem
-
-        c = carrier_I[inicio:fim]
-        s = carrier_Q[inicio:fim]
-
-        sinal[inicio:fim] = norm * (I * c + Q * s)
+        sinal[inicio:fim] = norm * (I * carrier_I[inicio:fim] +
+                                    Q * carrier_Q[inicio:fim])
 
     return t, sinal
 
 def qpsk_demodulation(received, fc=2, amostragem=200):
-    # Cria o eixo de tempo
+
     t = np.linspace(0, len(received)/amostragem, len(received))
+    carrier_I = np.cos(2*np.pi*fc*t)
+    carrier_Q = np.sin(2*np.pi*fc*t)
 
-    portadora_I = np.cos(2*np.pi*fc*t)
-    portadora_Q = np.sin(2*np.pi*fc*t)
-
-    # Dividir o sinal recebido em símbolos
     num_simbolos = len(received) // amostragem
-    bits = ""
+    manchester_rec = []
 
-    # Para cada símbolo, correlaciona com as portadoras I e Q
     for i in range(num_simbolos):
         inicio = i * amostragem
         fim = (i + 1) * amostragem
-
         trecho = received[inicio:fim]
 
-        # correlaciona
-        I = np.sum(trecho * portadora_I[inicio:fim])
-        Q = np.sum(trecho * portadora_Q[inicio:fim])
+        I = np.sum(trecho * carrier_I[inicio:fim])
+        Q = np.sum(trecho * carrier_Q[inicio:fim])
 
-        # decisão por quadrante
-        if I > 0 and Q > 0:
-            bits += "00"
-        elif I < 0 and Q > 0:
-            bits += "01"
-        elif I < 0 and Q < 0:
-            bits += "11"
-        else:
-            bits += "10"
+        # decisores para recuperar os níveis Manchester
+        nivel_I = 1 if I >= 0 else -1
+        nivel_Q = 1 if Q >= 0 else -1
 
-    return bits
+        manchester_rec += [nivel_I, nivel_Q]
+
+    return manchester_rec
 
 
 def plot_all(manchester, 
@@ -222,7 +194,7 @@ t_bpsk, bpsk = bpsk_modulation(sinal_manchester)
 bpsk_ruido = awgn(bpsk, sigma=0.5)
 
 # QPSK
-t_qpsk, qpsk = qpsk_modulation(binario)
+t_qpsk, qpsk = qpsk_modulation(sinal_manchester)
 qpsk_ruido = awgn(qpsk, sigma=0.5)
 
 # =============== DEMODULAÇÃO BPSK ===============
@@ -236,11 +208,9 @@ print("Binário:", binario_bpsk)
 print("ASCII:", ascii_bpsk)
 
 # =============== DEMODULAÇÃO QPSK ===============
-binario_qpsk = qpsk_demodulation(qpsk_ruido)
+manchester_recuperado_qpsk = qpsk_demodulation(qpsk_ruido)
 
-# remover padding se houver
-binario_qpsk = binario_qpsk[:len(binario)]
-
+binario_qpsk = manchester_decode(manchester_recuperado_qpsk)
 ascii_qpsk = binary_to_ascii(binario_qpsk)
 
 print("\n[6] MENSAGEM RECUPERADA VIA QPSK:")
