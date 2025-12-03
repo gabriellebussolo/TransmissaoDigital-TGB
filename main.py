@@ -38,8 +38,6 @@ def manchester_decode(sinal):
             binario += "0"
     return binario
 
-
-
 def awgn(signal, sigma):
     noise = np.random.normal(0, sigma, len(signal))
     return signal + noise
@@ -86,42 +84,63 @@ def bpsk_demodulation(received, fc=0.5, amostragem=100):
 
 
 def qpsk_modulation(binario, fc=2, amostragem=200):
+    # O QPSK mapeia 2 bits por símbolo, se houver número ímpar de bits, adiciona um zero no final
     if len(binario) % 2 != 0:
-        binario += "0"   # padding
+        binario += "0"   
 
+    # Divide a string binária em grupos de 2 bits
     pares = [binario[i:i+2] for i in range(0, len(binario), 2)]
 
-    fase_map = {
-        "00": np.pi/4,
-        "01": 3*np.pi/4,
-        "11": -3*np.pi/4,
-        "10": -np.pi/4
+    # Mapeamento de fase para cada par de bits
+    mapa_IQ = {
+        "00": ( 1,  1),
+        "01": (-1,  1),
+        "11": (-1, -1),
+        "10": ( 1, -1)
     }
 
+    # Quantidade total de símbolos.
     t_total = len(pares)
+    
+    # Cria o eixo de tempo
     t = np.linspace(0, t_total, t_total * amostragem)
+    
+    # Portadoras Q/I
+    carrier_I = np.cos(2*np.pi*fc*t)
+    carrier_Q = np.sin(2*np.pi*fc*t)
 
+    # Cria um vetor cheio de zeros para o sinal modulado
     sinal = np.zeros_like(t)
 
-    idx = 0
-    for par in pares:
-        fase = fase_map[par]
-        inicio = idx * amostragem
-        fim = (idx + 1) * amostragem
-        sinal[inicio:fim] = np.cos(2*np.pi*fc*t[inicio:fim] + fase)
-        idx += 1
+    # Monta a QPSK, obtendo a fase correta para cada par de bits normalização de energia
+    norm = 1/np.sqrt(2)
+
+    # 6) construção símbolo a símbolo
+    for k, par in enumerate(pares):
+        I, Q = mapa_IQ[par]
+
+        inicio = k * amostragem
+        fim = (k + 1) * amostragem
+
+        c = carrier_I[inicio:fim]
+        s = carrier_Q[inicio:fim]
+
+        sinal[inicio:fim] = norm * (I * c + Q * s)
 
     return t, sinal
 
-""" def qpsk_demodulation(received, fc=2, amostragem=200):
+def qpsk_demodulation(received, fc=2, amostragem=200):
+    # Cria o eixo de tempo
     t = np.linspace(0, len(received)/amostragem, len(received))
 
     portadora_I = np.cos(2*np.pi*fc*t)
     portadora_Q = np.sin(2*np.pi*fc*t)
 
+    # Dividir o sinal recebido em símbolos
     num_simbolos = len(received) // amostragem
     bits = ""
 
+    # Para cada símbolo, correlaciona com as portadoras I e Q
     for i in range(num_simbolos):
         inicio = i * amostragem
         fim = (i + 1) * amostragem
@@ -143,7 +162,7 @@ def qpsk_modulation(binario, fc=2, amostragem=200):
             bits += "10"
 
     return bits
- """
+
 
 def plot_all(manchester, 
              t_bpsk, bpsk, bpsk_ruido,
@@ -217,7 +236,7 @@ print("Binário:", binario_bpsk)
 print("ASCII:", ascii_bpsk)
 
 # =============== DEMODULAÇÃO QPSK ===============
-""" binario_qpsk = qpsk_demodulation(qpsk_ruido)
+binario_qpsk = qpsk_demodulation(qpsk_ruido)
 
 # remover padding se houver
 binario_qpsk = binario_qpsk[:len(binario)]
@@ -227,7 +246,7 @@ ascii_qpsk = binary_to_ascii(binario_qpsk)
 print("\n[6] MENSAGEM RECUPERADA VIA QPSK:")
 print("Binário:", binario_qpsk)
 print("ASCII:", ascii_qpsk)
- """
+
 
 # Plot final
 plot_all(
