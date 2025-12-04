@@ -317,6 +317,3 @@ plot_ondas(
 )
 # Plotar o resultado
 plot_ber(ebno_db, ber_bpsk, ber_qpsk, ebno_linear)
-
-plt.semilogy(ebno_db, theoretical_ber(ebno_linear), 'k--', label='Teórico BPSK/QPSK')
-

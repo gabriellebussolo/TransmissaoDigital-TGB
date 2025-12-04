@@ -232,3 +232,6 @@ Este sistema simula de forma completa todas as etapas de uma transmissão digita
 A arquitetura modular permite estudar separadamente o impacto de cada etapa no desempenho da comunicação.
 
 
+----
+Alunas: Cinthia Becher e Gabrielle Bussolo
+
