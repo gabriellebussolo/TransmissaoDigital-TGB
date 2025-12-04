@@ -3,7 +3,6 @@ import numpy as np
 import matplotlib.pyplot as plt
 import random
 import string
-from scipy.special import erfc # Importação adicionada para a curva teórica de BER
 
 def ascii_to_binary(texto):
     binario_final = ""
@@ -154,13 +153,6 @@ def ber_calculator(original_binary, received_binary):
     if min_len == 0:
         return 0.0
     return num_errors / min_len
-
-def theoretical_ber(ebno_linear):
-    """Calcula a BER teórica para BPSK/QPSK (coerente) no canal AWGN.
-       A entrada deve ser o E_b/N_0 linear correspondente."""
-    # P_e = Q(sqrt(2 * Eb/N0))
-    return 0.5 * erfc(np.sqrt(ebno_linear))
-
 
 def simulate_ber_vs_snr(original_binary, snr_db_range, N_sim=1):
     """Simula a BER em função da SNR para BPSK e QPSK.
