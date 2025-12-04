@@ -309,12 +309,14 @@ ebno_db, ber_bpsk, ber_qpsk, ebno_linear, t_qpsk, qpsk_signal, qpsk_ruido, t_bps
     
 print(f"\nSimulação concluída com {N_simulacoes_por_ponto} repetições por ponto.")
 
-# Plotar o resultado
-plot_ber(ebno_db, ber_bpsk, ber_qpsk, ebno_linear)
-
 # Plot ondas
 plot_ondas(
     binario_manchester,
     t_bpsk, bpsk_signal, bpsk_ruido,
     t_qpsk, qpsk_signal, qpsk_ruido
 )
+# Plotar o resultado
+plot_ber(ebno_db, ber_bpsk, ber_qpsk, ebno_linear)
+
+plt.semilogy(ebno_db, theoretical_ber(ebno_linear), 'k--', label='Teórico BPSK/QPSK')
+
