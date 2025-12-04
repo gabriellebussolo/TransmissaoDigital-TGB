@@ -162,7 +162,7 @@ def theoretical_ber(ebno_linear):
     return 0.5 * erfc(np.sqrt(ebno_linear))
 
 
-def simulate_ber_vs_snr(original_binary, snr_db_range, N_sim=20):
+def simulate_ber_vs_snr(original_binary, snr_db_range, N_sim=1):
     """Simula a BER em função da SNR para BPSK e QPSK.
        Internamente, calcula E_b/N_0 para determinar o ruído."""
     
