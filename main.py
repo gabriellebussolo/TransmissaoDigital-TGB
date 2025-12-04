@@ -33,8 +33,10 @@ def manchester_encode(binario):
 
 def manchester_decode(sinal):
     binario = ""
-    for i in range(0, len(sinal), 2):
-        par = sinal[i:i+2]
+    # Trata o caso onde o sinal pode ter um número ímpar de amostras
+    num_pares = len(sinal) // 2
+    for i in range(num_pares):
+        par = sinal[i*2:(i+1)*2]
         if par == [1, -1]:
             binario += "1"
         else:
@@ -78,6 +80,7 @@ def bpsk_demodulation(received, fc=0.5, amostragem=100):
         fim = (i + 1) * amostragem
         energia = np.sum(sinal_multiplicado[inicio:fim])
 
+        # Decisor
         if energia >= 0:
             manchester_recuperado.append(1)
         else:
@@ -103,7 +106,7 @@ def qpsk_modulation(manchester, fc=2, amostragem=200):
     carrier_Q = np.sin(2*np.pi*fc*t)
 
     sinal = np.zeros_like(t)
-    norm = 1/np.sqrt(2)
+    norm = 1/np.sqrt(2) # Normalização para Es=1
 
     for k, (I, Q) in enumerate(pares_IQ):
         inicio = k * amostragem
@@ -127,6 +130,7 @@ def qpsk_demodulation(received, fc=2, amostragem=200):
         fim = (i + 1) * amostragem
         trecho = received[inicio:fim]
 
+        # Multiplica e integra (correlação)
         I = np.sum(trecho * carrier_I[inicio:fim])
         Q = np.sum(trecho * carrier_Q[inicio:fim])
 
@@ -152,13 +156,15 @@ def ber_calculator(original_binary, received_binary):
     return num_errors / min_len
 
 def theoretical_ber(ebno_linear):
-    """Calcula a BER teórica para BPSK/QPSK (coerente) no canal AWGN."""
+    """Calcula a BER teórica para BPSK/QPSK (coerente) no canal AWGN.
+       A entrada deve ser o E_b/N_0 linear correspondente."""
     # P_e = Q(sqrt(2 * Eb/N0))
-    # Onde Q(x) = 0.5 * erfc(x / sqrt(2))
     return 0.5 * erfc(np.sqrt(ebno_linear))
 
-def simulate_ber_vs_ebno(original_binary, ebno_db_range, N_sim=20):
-    """Simula a BER em função de Eb/N0 para BPSK e QPSK."""
+
+def simulate_ber_vs_snr(original_binary, snr_db_range, N_sim=20):
+    """Simula a BER em função da SNR para BPSK e QPSK.
+       Internamente, calcula E_b/N_0 para determinar o ruído."""
     
     # 1. Pré-processamento: Codificar em Manchester
     binario_manchester = manchester_encode(original_binary)
@@ -166,24 +172,37 @@ def simulate_ber_vs_ebno(original_binary, ebno_db_range, N_sim=20):
     ber_bpsk = []
     ber_qpsk = []
     
-    # Fatores de amostragem/integração para normalizar o ruído AWGN:
-    # A = amostragem / 2. (Resulta da integração do produto do sinal pela portadora)
+    # Eficiência Espectral (R_b / B)
+    # Relação: E_b/N_0 = SNR / eta.
+    eta_bpsk = 1 # BPSK (1 bit/símbolo) -> eta ~ 1
+    eta_qpsk = 2 # QPSK (2 bits/símbolo) -> eta ~ 2
+
+    # Conversão de SNR dB para escala linear
+    snr_linear_range = 10**(snr_db_range / 10)
+    
+    # Derivar o E_b/N_0 linear de cada modulação a partir da SNR
+    ebno_linear_range_bpsk = snr_linear_range / eta_bpsk
+    ebno_linear_range_qpsk = snr_linear_range / eta_qpsk
+    
+    # Fatores de amostragem/integração para normalizar o ruído AWGN
     A_bpsk = 100 / 2 # amostragem=100 para BPSK
-    A_qpsk = 200 / 2 # amostragem=200 para QPSK (usado na modulação QPSK)
+    A_qpsk = 200 / 2 # amostragem=200 para QPSK
+
     
-    # Conversão de dB para escala linear
-    ebno_linear_range = 10**(ebno_db_range / 10)
-    
-    for ebno_linear in ebno_linear_range:
+    for i, snr_linear in enumerate(snr_linear_range):
+        
+        ebno_linear_bpsk = ebno_linear_range_bpsk[i]
+        ebno_linear_qpsk = ebno_linear_range_qpsk[i]
         
         # --- Cálculo de Sigma (Variância do Ruído) ---
         
-        # 1. Sigma ideal (assumindo Eb=1 na saída do filtro casado)
-        sigma_ideal_bpsk = np.sqrt(1 / (2 * ebno_linear))
-        sigma_ideal_qpsk = np.sqrt(1 / (4 * ebno_linear))
+        # 1. Sigma ideal (com base no E_b/N_0 correspondente)
+        # BPSK: E_b/N_0 = E_b / (2*sigma^2) -> sigma_ideal = sqrt(E_b / (2 * E_b/N_0))
+        # QPSK: E_b/N_0 = E_s/2 / (2*sigma^2) -> sigma_ideal = sqrt(E_s / (4 * E_b/N_0))
+        sigma_ideal_bpsk = np.sqrt(1 / (2 * ebno_linear_bpsk))
+        sigma_ideal_qpsk = np.sqrt(1 / (4 * ebno_linear_qpsk))
 
         # 2. ESCALONAMENTO DO RUÍDO: Multiplica pela raiz quadrada do fator de integração (A)
-        # O ruído AWGN deve ser amplificado para ter o efeito correto após a integração (soma).
         sigma_bpsk = sigma_ideal_bpsk * np.sqrt(A_bpsk)
         sigma_qpsk = sigma_ideal_qpsk * np.sqrt(A_qpsk)
         
@@ -217,11 +236,11 @@ def simulate_ber_vs_ebno(original_binary, ebno_db_range, N_sim=20):
             total_errors_qpsk += sum(b1 != b2 for b1, b2 in zip(original_binary[:min_len_qpsk], binario_qpsk[:min_len_qpsk]))
         
         # Média de BER
-        # O número de bits total é o tamanho da mensagem original * número de simulações
         ber_bpsk.append(total_errors_bpsk / (total_bits * N_sim))
         ber_qpsk.append(total_errors_qpsk / (total_bits * N_sim))
 
-    return ebno_db_range, np.array(ber_bpsk), np.array(ber_qpsk), ebno_linear_range, t_qpsk, qpsk_signal, qpsk_ruido, t_bpsk, bpsk_signal, bpsk_ruido, binario_manchester
+    # Retorna o range de SNR (dB) e os E_b/N_0 lineares para as curvas teóricas separadas
+    return snr_db_range, np.array(ber_bpsk), np.array(ber_qpsk), ebno_linear_range_bpsk, ebno_linear_range_qpsk, t_qpsk, qpsk_signal, qpsk_ruido, t_bpsk, bpsk_signal, bpsk_ruido, binario_manchester
 
 def plot_ondas(manchester, 
              t_bpsk, bpsk, bpsk_ruido,
@@ -253,21 +272,22 @@ def plot_ondas(manchester,
     plt.tight_layout()
     plt.show()
     
-def plot_ber(ebno_db, ber_bpsk, ber_qpsk, ebno_linear):
-    """Gera o gráfico de BER em função de Eb/N0 (dB)."""
+def plot_ber_snr(snr_db, ber_bpsk, ber_qpsk, ebno_linear_bpsk, ebno_linear_qpsk):
+    """Gera o gráfico de BER em função de SNR (dB), comparando BPSK e QPSK."""
     
     # Adicionando um piso para BERs zero (essencial para plotar no eixo logarítmico)
-    # Se BER=0, substitui por 1e-7 para que o ponto apareça.
     ber_bpsk_plot = np.where(ber_bpsk == 0, 1e-7, ber_bpsk)
     ber_qpsk_plot = np.where(ber_qpsk == 0, 1e-7, ber_qpsk)
     
     plt.figure(figsize=(10, 6))
-    plt.semilogy(ebno_db, ber_bpsk_plot, 'ro-', label='BPSK (Simulado)')
-    plt.semilogy(ebno_db, ber_qpsk_plot, 'bs-', label='QPSK (Simulado)')
     
-    plt.xlabel('$E_b/N_0$ (dB)')
+    # Curvas Simuladas (BER vs SNR)
+    plt.semilogy(snr_db, ber_bpsk_plot, 'ro-', label='BPSK (Simulado)')
+    plt.semilogy(snr_db, ber_qpsk_plot, 'bs-', label='QPSK (Simulado)')
+    
+    plt.xlabel('SNR (dB)') # Rótulo para SNR
     plt.ylabel('Taxa de Erro de Bit (BER)')
-    plt.title('BER vs $E_b/N_0$ para BPSK e QPSK em canal AWGN')
+    plt.title('BER vs SNR para BPSK e QPSK em canal AWGN') # Título para SNR
     plt.grid(True, which="both")
     plt.legend()
     
@@ -294,16 +314,17 @@ else:
     
 original_binary_simulation = ascii_to_binary(texto)
     
-# Definir a faixa de Eb/N0 a ser testada (em dB)
-ebno_db_range = np.linspace(0, 10, 21)
+# Definir a faixa de SNR a ser testada (em dB)
+# Faixa de 0 a 10 dB de SNR
+snr_db_range = np.linspace(0, 10, 21)
     
 # Da pra aumentar este valor para ter uma curva mais suave
 N_simulacoes_por_ponto = 100
     
-# Executar a simulação
-ebno_db, ber_bpsk, ber_qpsk, ebno_linear, t_qpsk, qpsk_signal, qpsk_ruido, t_bpsk, bpsk_signal, bpsk_ruido, binario_manchester = simulate_ber_vs_ebno(
+# Executar a simulação (Note a mudança de função e variáveis de retorno)
+snr_db, ber_bpsk, ber_qpsk, ebno_linear_bpsk, ebno_linear_qpsk, t_qpsk, qpsk_signal, qpsk_ruido, t_bpsk, bpsk_signal, bpsk_ruido, binario_manchester = simulate_ber_vs_snr(
     original_binary_simulation, 
-    ebno_db_range, 
+    snr_db_range, 
     N_sim=N_simulacoes_por_ponto
 )
     
@@ -315,5 +336,6 @@ plot_ondas(
     t_bpsk, bpsk_signal, bpsk_ruido,
     t_qpsk, qpsk_signal, qpsk_ruido
 )
-# Plotar o resultado
-plot_ber(ebno_db, ber_bpsk, ber_qpsk, ebno_linear)
+
+# Plotar o resultado (Note a mudança de função e variáveis)
+plot_ber_snr(snr_db, ber_bpsk, ber_qpsk, ebno_linear_bpsk, ebno_linear_qpsk)
