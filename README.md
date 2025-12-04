@@ -239,6 +239,12 @@ As figuras abaixo mostram a evolução completa do sinal ao longo da transmissã
 **Entrada: `computador`**
 ![Formas de onda - Manchester, BPSK e QPSK](codificacao_modulacao-1.png)
 
+**Entrada:`y    9PW*>   /
+                                         4Zx5dF^hl}9j8;l,LeHFT Hg=
+~-L\0GT}>|&E<'eI(&Fs1HUJO
+                 |O/Blbum~[A&vK"F+Ai4sapw`**
+![Formas de onda - Manchester, BPSK e QPSK](codificacao_modulacao-2.png)
+
 As imagens são composta por cinco subgráficos, representando cada etapa do pipeline digital:
 
 ---
@@ -290,6 +296,12 @@ As figuras a seguir (`BERvsSNR-1.png`) apresentam a comparação entre as modula
 **Entrada: `computador`**
 ![BER vs SNR para BPSK e QPSK em canal AWGN](BERvsSNR-1.png)
 
+**Entrada:`y    9PW*>   /
+                                         4Zx5dF^hl}9j8;l,LeHFT Hg=
+~-L\0GT}>|&E<'eI(&Fs1HUJO
+                 |O/Blbum~[A&vK"F+Ai4sapw`**
+![BER vs SNR para BPSK e QPSK em canal AWGN](BERvsSNR-2.png)
+
 Cada ponto foi obtido com **100 simulações**, garantindo robustez estatística.
 
 ### Principais observações:
@@ -316,6 +328,13 @@ Cada ponto foi obtido com **100 simulações**, garantindo robustez estatística
   BPSK melhor em BER; QPSK mais eficiente em termos de banda.
 
 Ambos os cenários produzem resultados consistentes e alinhados com a teoria de comunicações digitais.
+
+---
+
+## Vídeo com a execução e explicação dos testes
+
+Os testes apresentados foram demonstrados e analisados com mais detalhes no seguinte vídeo:
+[Clique Aqui para Ver o Vídeo](https://www.youtube.com/watch?v=1QjkQO2DFw0)
 
 ---
 
