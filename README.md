@@ -203,12 +203,12 @@ A simulação repete várias transmissões para cada valor de **Eb/N₀**, resul
 
 A simulação exibe:
 
-### ✔ Formas de onda:
+### Formas de onda:
 - sinal Manchester  
 - BPSK (limpo e com ruído)  
 - QPSK (limpo e com ruído)
 
-### ✔ Curva BER × Eb/N₀:
+### Curva BER × Eb/N₀:
 Com os resultados de:
 
 - **BPSK (simulado)**
@@ -218,18 +218,121 @@ Essa comparação valida que BPSK e QPSK têm **desempenho energético equivalen
 
 ---
 
-# 📌 Conclusão
+## Testes e Resultados
 
-Este sistema simula de forma completa todas as etapas de uma transmissão digital passando por:
+Para validar o sistema de transmissão digital, realizamos dois cenários de teste:
 
-- codificação  
-- modulação  
-- canal ruidoso  
-- demodulação  
-- reconstrução dos dados  
-- análise estatística (BER)
+1. **Mensagem inserida manualmente**: `"computador"`  
+2. **Mensagem gerada aleatoriamente**: [adicionar]
 
-A arquitetura modular permite estudar separadamente o impacto de cada etapa no desempenho da comunicação.
+Em ambos os casos, o programa executa todas as etapas do fluxo digital:  
+codificação Manchester, modulação (BPSK e QPSK), inserção de ruído AWGN, demodulação, decodificação e cálculo da BER.
+
+A seguir descrevemos os resultados obtidos para cada etapa da transmissão.
+
+---
+
+## Formas de Onda do Sistema
+
+As figuras abaixo mostram a evolução completa do sinal ao longo da transmissão:
+
+**Entrada: `computador`**
+![Formas de onda - Manchester, BPSK e QPSK](codificacao_modulacao-1.png)
+
+As imagens são composta por cinco subgráficos, representando cada etapa do pipeline digital:
+
+---
+
+### **1. Codificação Manchester**
+- Cada bit da mensagem é convertido em dois níveis:
+  - `1` → `[+1, -1]`
+  - `0` → `[-1, +1]`
+- A transição obrigatória por bit melhora a sincronização no receptor.
+- O gráfico evidencia claramente o padrão alternado característico desse código.
+
+---
+
+### **2. BPSK — Sinal Modulado**
+- Cada nível Manchester modula diretamente uma portadora cossenoidal.
+- `+1` mantém a fase; `-1` inverte a fase em 180°.
+- O resultado é um sinal senoidal alternando entre duas fases fixas.
+
+---
+
+### **3. BPSK com Ruído (AWGN)**
+- Após atravessar o canal com ruído gaussiano:
+  - Para **SNR baixo**, a forma da portadora se torna menos reconhecível.
+  - Para **SNR alto**, o sinal preserva mais características originais.
+- A diferença visual entre o sinal limpo e o ruidoso destaca o impacto do AWGN.
+
+---
+
+### **4. QPSK — Sinal Modulado**
+- Os níveis Manchester são agrupados em pares → símbolos (I, Q).
+- O sinal final é composto por:
+  - componente em fase (cos)
+  - componente em quadratura (sin)
+- Como cada símbolo carrega **dois bits**, a modulação atinge o dobro da eficiência espectral do BPSK.
+
+---
+
+### **5. QPSK com Ruído (AWGN)**
+- O ruído interfere tanto na amplitude quanto na fase.
+- Apesar de mais eficiente, o QPSK tende a ser mais sensível ao ruído.
+- Ainda assim, para SNR alto, o receptor reconstrói adequadamente a sequência Manchester.
+
+---
+
+## Curva BER × SNR (BPSK vs QPSK)
+
+As figuras a seguir (`BERvsSNR-1.png`) apresentam a comparação entre as modulações com SNR variando de **0 a 10 dB**:
+
+**Entrada: `computador`**
+![BER vs SNR para BPSK e QPSK em canal AWGN](BERvsSNR-1.png)
+
+Cada ponto foi obtido com **100 simulações**, garantindo robustez estatística.
+
+### Principais observações:
+
+- A **BER diminui à medida que o SNR aumenta**, para ambas modulações.
+- **BPSK** apresenta melhor desempenho:
+  - sua curva está sempre abaixo da curva do QPSK.
+  - atinge BER praticamente zero para SNR acima de ~8 dB.
+- **QPSK** exige SNR maior para alcançar BER semelhante, pois transmite mais informações por símbolo.
+- Apesar disso, QPSK mantém a vantagem de **eficiência espectral dobrada**, justificando seu uso em cenários onde a banda é mais limitada.
+
+---
+
+## Comparação entre os Cenários de Teste
+
+### 1. **Mensagem “computador”**
+- Excelente para ilustrar claramente todo o pipeline digital.
+- Mostra de forma didática a relação entre os bits, o sinal Manchester e os símbolos gerados.
+
+### 2. **Mensagem Aleatória** 
+- Demonstra a robustez da simulação com inputs não previsíveis.
+- Permite validar o sistema em condições mais próximas das reais.
+- Mantém o mesmo comportamento nos gráficos:  
+  BPSK melhor em BER; QPSK mais eficiente em termos de banda.
+
+Ambos os cenários produzem resultados consistentes e alinhados com a teoria de comunicações digitais.
+
+---
+
+## Conclusão dos Testes
+
+Os experimentos comprovam que:
+
+- A codificação Manchester foi aplicada corretamente.
+- As modulações BPSK e QPSK foram implementadas com fidelidade.
+- O canal AWGN influencia diretamente a BER, como esperado.
+- O sistema reconstrói a mensagem original com alta precisão para SNR elevados.
+- BPSK → menor BER  
+- QPSK → maior eficiência espectral  
+
+Esses testes demonstram que o sistema se comporta como um **enlace digital realista**, permitindo estudar com clareza o impacto da modulação e do ruído na comunicação.
+
+
 
 
 ----
