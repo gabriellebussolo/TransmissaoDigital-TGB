@@ -355,5 +355,5 @@ Esses testes demonstram que o sistema se comporta como um **enlace digital reali
 
 
 ----
-Alunas: Cinthia Becher e Gabrielle Bussolo
+**Alunas:** Cinthia Becher e Gabrielle Bussolo
 
